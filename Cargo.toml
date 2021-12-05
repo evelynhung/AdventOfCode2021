@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 text_io = "0.1"
+regex = "1"
+lazy_static = "1.4"
