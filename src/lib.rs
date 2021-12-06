@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 pub fn read_input(filename: &str) -> Vec<String> {
     let data_folder = "data";
@@ -14,6 +14,20 @@ pub fn read_input(filename: &str) -> Vec<String> {
         .lines()
         .map(|line| line.unwrap())
         .collect()
+}
+
+pub fn read_file_to_string(filename: &str) -> String {
+    let data_folder = "data";
+    let input_file_path = format!("{}/{}.txt", data_folder, filename);
+
+    let mut file = match File::open(&input_file_path) {
+        Ok(file) => file,
+        Err(why) => panic!("Can't not open {}: {}", input_file_path, why),
+    };
+    let mut buf = String::new();
+    file.read_to_string(&mut buf).expect("Can't read input file to string.");
+
+    buf
 }
 
 pub struct Coordinate {
