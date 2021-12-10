@@ -1,5 +1,5 @@
-use std::{collections::HashMap, fs::File, io::Read};
-use text_io::{read, try_read};
+use advent_of_code::read_file_to_string;
+use std::collections::HashMap;
 
 struct Board {
     num_to_index: HashMap<u8, usize>,
@@ -10,7 +10,7 @@ struct Board {
 }
 
 impl Board {
-    fn new(data: &[u8; 25]) -> Board {
+    fn new(data: &[u8]) -> Board {
         let num_to_index: HashMap<u8, usize> =
             data.iter().enumerate().map(|(i, &n)| (n, i)).collect();
         let v_lines = [0; 5];
@@ -43,33 +43,21 @@ impl Board {
     }
 }
 
-fn read_input(filename: &str) -> (Vec<u8>, Vec<Board>) {
-    let data_folder = "data";
-    let input_file_path = format!("{}/{}.txt", data_folder, filename);
-
-    let mut file_bytes = match File::open(&input_file_path) {
-        Ok(file) => file.bytes().map(|ch| ch.unwrap()),
-        Err(why) => panic!("Can't not open {}: {}", input_file_path, why),
-    };
-
-    let line: String = read!("{}\n", file_bytes);
-    let picked_nums: Vec<u8> = line
+fn read_input(input: &str) -> (Vec<u8>, Vec<Board>) {
+    let (num_str, boards_str) = input.split_once("\n\n").unwrap();
+    let picked_nums: Vec<u8> = num_str.trim()
         .split(',')
         .map(|token| token.parse().unwrap())
         .collect();
     let mut boards: Vec<Board> = vec![];
-    loop {
-        let mut board = [0; 25];
-        let ret: Result<u8, _> = try_read!("{}", file_bytes);
-        if ret.is_err() {
-            break;
-        }
-        board[0] = ret.unwrap();
-        for cell in board.iter_mut().skip(1) {
-            *cell = read!("{}", file_bytes);
-        }
+    boards_str.split("\n\n").for_each(|b_str| {
+        let board: Vec<u8> = b_str
+            .split_ascii_whitespace()
+            .map(|token| token.parse().unwrap())
+            .collect();
+        
         boards.push(Board::new(&board));
-    }
+    });
 
     (picked_nums, boards)
 }
@@ -108,25 +96,30 @@ fn bingo_to_lose(filename: &str) -> i32 {
 }
 
 fn main() {
-    let win_score = bingo_to_win(env!("CARGO_BIN_NAME"));
-    let lose_score = bingo_to_lose(env!("CARGO_BIN_NAME"));
+    let input = read_file_to_string(env!("CARGO_BIN_NAME"));
+    let win_score = bingo_to_win(&input);
+    let lose_score = bingo_to_lose(&input);
     println!("{}", win_score);
     println!("{}", lose_score);
 }
 
 #[cfg(test)]
 mod tests {
+    use advent_of_code::read_file_to_string;
+
     use crate::{bingo_to_lose, bingo_to_win};
 
     #[test]
     fn test_bingo_to_win() {
-        let score = bingo_to_win("day04-small");
+        let data = read_file_to_string("day04-small");
+        let score = bingo_to_win(&data);
         assert_eq!(score, 4512);
     }
 
     #[test]
     fn test_bingo_to_lose() {
-        let score = bingo_to_lose("day04-small");
+        let data = read_file_to_string("day04-small");
+        let score = bingo_to_lose(&data);
         assert_eq!(score, 1924);
     }
 }

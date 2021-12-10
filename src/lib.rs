@@ -1,20 +1,6 @@
 use std::cmp::Ordering;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
-
-pub fn read_input(filename: &str) -> Vec<String> {
-    let data_folder = "data";
-    let input_file_path = format!("{}/{}.txt", data_folder, filename);
-
-    let file = match File::open(&input_file_path) {
-        Ok(file) => file,
-        Err(why) => panic!("Can't not open {}: {}", input_file_path, why),
-    };
-    BufReader::new(file)
-        .lines()
-        .map(|line| line.unwrap())
-        .collect()
-}
+use std::io::Read;
 
 pub fn read_file_to_string(filename: &str) -> String {
     let data_folder = "data";
@@ -49,7 +35,11 @@ pub struct Segment {
 impl Segment {
     pub fn new(from: Coordinate, to: Coordinate) -> Segment {
         let direction = (compare_to_int(from.x, to.x), compare_to_int(from.y, to.y));
-        Segment { from, to, direction }
+        Segment {
+            from,
+            to,
+            direction,
+        }
     }
 }
 

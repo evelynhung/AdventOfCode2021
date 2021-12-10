@@ -8,23 +8,23 @@ fn get_crab_positions(input: &str) -> Vec<i32> {
         .collect()
 }
 
-fn find_median(positions: &mut Vec<i32>) -> i32 {
-    positions.sort();
+fn find_median(positions: &mut [i32]) -> i32 {
+    positions.sort_unstable();
 
     let mid = positions.len() / 2;
     positions[mid]
 }
 
-fn calc_distance_sum(positions: &Vec<i32>, target: i32) -> i32 {
+fn calc_distance_sum(positions: &[i32], target: i32) -> i32 {
     positions.iter().map(|&val| i32::abs(val - target)).sum()
 }
 
-fn find_average_floor(positions: &Vec<i32>) -> i32 {
+fn find_average_floor(positions: &[i32]) -> i32 {
     let avg = positions.iter().sum::<i32>() as f64 / positions.len() as f64;
     avg.floor() as i32
 }
 
-fn calc_weighted_distance_sum(positions: &Vec<i32>, target: i32) -> i32 {
+fn calc_weighted_distance_sum(positions: &[i32], target: i32) -> i32 {
     positions
         .iter()
         .map(|&pos| {
@@ -35,13 +35,13 @@ fn calc_weighted_distance_sum(positions: &Vec<i32>, target: i32) -> i32 {
 }
 
 fn align_crabs(input: &str) -> i32 {
-    let mut positions = get_crab_positions(&input);
+    let mut positions = get_crab_positions(input);
     let median = find_median(&mut positions);
     calc_distance_sum(&positions, median)
 }
 
 fn weighted_align_crabs(input: &str) -> i32 {
-    let positions = get_crab_positions(&input);
+    let positions = get_crab_positions(input);
     let avg = find_average_floor(&positions);
     i32::min(
         calc_weighted_distance_sum(&positions, avg),

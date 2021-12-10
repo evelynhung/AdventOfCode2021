@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     io::{BufRead, BufReader},
 };
 
@@ -16,112 +16,56 @@ fn parse_digits(pattern: &str) -> Vec<String> {
         .collect()
 }
 
-fn parse_entry(entry: &String) -> (Vec<String>, Vec<String>) {
-    let mut split = entry.split('|');
-    let patterns = split.next().expect("should have input patterns").trim();
-    let output_digits = split.next().expect("should have output digits").trim();
-
-    (parse_digits(patterns), parse_digits(output_digits))
+fn parse_entry(entry: &str) -> (Vec<String>, Vec<String>) {
+    let (patterns, output_digits) = entry.split_once('|').expect("Where is my IO?");
+    (parse_digits(patterns.trim()), parse_digits(output_digits.trim()))
 }
 
-fn count_uqique_digits(input: &str) -> i32 {
+fn count_uqique_digits(input: &str) -> usize {
     BufReader::new(input.as_bytes())
         .lines()
         .flat_map(|entry| parse_entry(&entry.unwrap()).1)
-        .map(|digit_str| match digit_str.len() {
-            2 | 3 | 4 | 7 => 1,
-            _ => 0,
+        .filter(|digit_str| matches!(digit_str.len(), 2 | 3 | 4 | 7))
+        .count()
+}
+
+fn reasoning_digits(patterns: &[String]) -> HashMap<String, u8> {
+    // Use "one" and "four" as filters for (2, 3, 5) and (0, 6, 9)
+    let one = patterns.iter().find(|ptn| ptn.len() == 2).expect("There should have an ONE");
+    let four = patterns.iter().find(|ptn| ptn.len() == 4).expect("There should have a FOUR");
+    patterns
+        .iter()
+        .map(|ptn| {
+            let pattern = ptn.to_owned();
+            match pattern.len() {
+                2 => (pattern, 1),
+                3 => (pattern, 7),
+                4 => (pattern, 4),
+                7 => (pattern, 8),
+                len => match (
+                    len,
+                    pattern.chars().filter(|c| one.contains(*c)).count(),
+                    pattern.chars().filter(|c| four.contains(*c)).count(),
+                ) {
+                    (5, 1, 2) => (pattern, 2),
+                    (5, 2, 3) => (pattern, 3),
+                    (5, 1, 3) => (pattern, 5),
+                    (6, 2, 3) => (pattern, 0),
+                    (6, 1, 3) => (pattern, 6),
+                    (6, 2, 4) => (pattern, 9),
+                    _ => unreachable!(),
+                },
+            }
         })
-        .sum()
+        .collect()
 }
 
-fn find_diff_char_count(ptn1: &str, ptn2: &str) -> usize {
-    let ptn_set1: HashSet<char> = ptn1.chars().collect();
-    let ptn_set2: HashSet<char> = ptn2.chars().collect();
-    ptn_set1.symmetric_difference(&ptn_set2).count()
-}
-
-fn reasoning_digits(patterns: &Vec<String>) -> HashMap<String, String> {
-    let mut len_to_patterns: HashMap<usize, Vec<String>> = HashMap::new();
-    let mut pattern_to_digit = HashMap::new();
-    for pattern in patterns {
-        let length = pattern.len();
-        len_to_patterns
-            .entry(length)
-            .and_modify(|e| e.push(pattern.to_owned()))
-            .or_insert(vec![pattern.to_owned()]);
-
-        match length {
-            2 => {
-                pattern_to_digit.insert(pattern.to_owned(), "1".into());
-            }
-            3 => {
-                pattern_to_digit.insert(pattern.to_owned(), "7".into());
-            }
-            4 => {
-                pattern_to_digit.insert(pattern.to_owned(), "4".into());
-            }
-            7 => {
-                pattern_to_digit.insert(pattern.to_owned(), "8".into());
-            }
-            _ => {}
-        }
-    }
-    let len5_group = len_to_patterns.get(&5).unwrap();
-    let len6_group = len_to_patterns.get(&6).unwrap();
-    for len5_item in len5_group {
-        let sum_diff: usize = len6_group
-            .iter()
-            .map(|len6_item| find_diff_char_count(len5_item, len6_item))
-            .sum();
-        match sum_diff {
-            9 => {
-                // 2's diff to {0, 6, 9} = 3 + 3 + 3
-                pattern_to_digit.insert(len5_item.to_owned(), "2".into());
-            }
-            5 => {
-                // 5's diff to {0, 6, 9} = 3 + 1 + 1
-                pattern_to_digit.insert(len5_item.to_owned(), "5".into());
-            }
-            7 => {
-                // 3's diff to {0, 6, 9} = 3 + 3 + 1
-                pattern_to_digit.insert(len5_item.to_owned(), "3".into());
-            }
-            _ => {}
-        }
-    }
-
-    for len6_item in len6_group {
-        let sum_diff: usize = len5_group
-            .iter()
-            .map(|len5_item| find_diff_char_count(len6_item, len5_item))
-            .sum();
-        match sum_diff {
-            9 => {
-                // 0's diff to {2, 3, 5} = 3 + 3 + 3
-                pattern_to_digit.insert(len6_item.to_owned(), "0".into());
-            }
-            5 => {
-                // 9's diff to {2, 3, 5} = 3 + 1 + 1
-                pattern_to_digit.insert(len6_item.to_owned(), "9".into());
-            }
-            7 => {
-                // 6's diff to {2, 3, 5} = 3 + 3 + 1
-                pattern_to_digit.insert(len6_item.to_owned(), "6".into());
-            }
-            _ => {}
-        }
-    }
-
-    pattern_to_digit
-}
-
-fn get_output_digits(entry: &String) -> i32 {
+fn get_output_digits(entry: &str) -> u32 {
     let (patterns, output_digits) = parse_entry(entry);
 
     let pattern_to_digits = reasoning_digits(&patterns);
 
-    let digits: Vec<String> = output_digits
+    output_digits
         .iter()
         .map(|pattern| {
             pattern_to_digits
@@ -129,11 +73,11 @@ fn get_output_digits(entry: &String) -> i32 {
                 .expect("A mapping from pattern to digit should exist")
                 .to_owned()
         })
-        .collect();
-    digits.join("").parse().unwrap()
+        .enumerate()
+        .fold(0, |sum, (i, d)| sum + d as u32 * 10u32.pow(3 - i as u32))
 }
 
-fn addup_output_digits(input: &str) -> i32 {
+fn addup_output_digits(input: &str) -> u32 {
     let input: Vec<String> = BufReader::new(input.as_bytes())
         .lines()
         .map(|line| line.unwrap())
@@ -172,7 +116,7 @@ mod tests {
     fn test_get_output_digits() {
         let data =
             "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf";
-        assert_eq!(5353, get_output_digits(&data.into()));
+        assert_eq!(5353, get_output_digits(&data));
         let data_set = vec![
             "be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe",
             "edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc",
@@ -187,7 +131,7 @@ mod tests {
         ];
         let ans_set = vec![8394, 9781, 1197, 9361, 4873, 8418, 4548, 1625, 8717, 4315];
         for i in 0..data_set.len() {
-            assert_eq!(ans_set[i], get_output_digits(&data_set[i].into()))
+            assert_eq!(ans_set[i], get_output_digits(&data_set[i]))
         }
     }
 

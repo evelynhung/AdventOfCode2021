@@ -1,6 +1,6 @@
-use std::{num::ParseIntError, str::FromStr};
+use std::{num::ParseIntError, str::FromStr, io::{BufRead, BufReader}};
 
-use advent_of_code::read_input;
+use advent_of_code::read_file_to_string;
 
 enum Operation {
     Forward(i32),
@@ -23,7 +23,7 @@ impl FromStr for Operation {
     type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut split = s.split(" ");
+        let mut split = s.split_ascii_whitespace();
         let direction = split.next().unwrap();
         let unit = split.next().unwrap().parse::<i32>()?;
         Ok(match direction {
@@ -35,7 +35,7 @@ impl FromStr for Operation {
     }
 }
 
-fn summed_moves(operations: &Vec<Operation>) -> Position {
+fn summed_moves(operations: &[Operation]) -> Position {
     let mut x = 0;
     let mut z = 0;
     for op in operations {
@@ -49,7 +49,7 @@ fn summed_moves(operations: &Vec<Operation>) -> Position {
     Position::new(x, z)
 }
 
-fn aimed_moves(operations: &Vec<Operation>) -> Position {
+fn aimed_moves(operations: &[Operation]) -> Position {
     let mut x = 0;
     let mut z = 0;
     let mut aim = 0;
@@ -68,14 +68,13 @@ fn aimed_moves(operations: &Vec<Operation>) -> Position {
     Position::new(x, z)
 }
 
-fn get_operations(input: Vec<&str>) -> Vec<Operation> {
-    input.iter().map(|line| line.parse().unwrap()).collect()
+fn get_operations(input: &str) -> Vec<Operation> {
+    BufReader::new(input.as_bytes()).lines().map(|line| line.unwrap().trim().parse().unwrap()).collect()
 }
 
 fn main() {
-    let lines = read_input(env!("CARGO_BIN_NAME"));
-    let input = lines.iter().map(|l| l.as_str()).collect();
-    let operations = get_operations(input);
+    let input = read_file_to_string(env!("CARGO_BIN_NAME"));
+    let operations = get_operations(&input);
     let summed_position = summed_moves(&operations);
     let aimed_position = aimed_moves(&operations);
     println!("{}", summed_position.x * summed_position.z);
@@ -88,15 +87,13 @@ mod tests {
 
     #[test]
     fn test_summed_moves() {
-        let data = vec![
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ];
-        let operations = get_operations(data);
+        let data = "forward 5
+                    down 5
+                    forward 8
+                    up 3
+                    down 8
+                    forward 2";
+        let operations = get_operations(&data);
         let position = summed_moves(&operations);
         assert_eq!(15, position.x);
         assert_eq!(10, position.z);
@@ -104,15 +101,13 @@ mod tests {
 
     #[test]
     fn test_aimed_moves() {
-        let data = vec![
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ];
-        let operations = get_operations(data);
+        let data = "forward 5
+                    down 5
+                    forward 8
+                    up 3
+                    down 8
+                    forward 2";
+        let operations = get_operations(&data);
         let position = aimed_moves(&operations);
         assert_eq!(15, position.x);
         assert_eq!(60, position.z);

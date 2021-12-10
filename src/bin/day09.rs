@@ -2,18 +2,18 @@ use std::{
     collections::{HashMap, VecDeque},
     io::{BufRead, BufReader},
 };
-
+use std::collections::hash_map::Entry;
 use advent_of_code::read_file_to_string;
 
-const DIRECTIONS: &[(i32, i32)] = &[(1, 0), (0, 1), (-1, 0), (0, -1)];
+const DIRECTIONS: [(isize, isize); 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 
-fn on_map(x: i32, y: i32, rows: usize, cols: usize) -> bool {
-    x >= 0 && y >= 0 && x < rows as i32 && y < cols as i32
+fn on_map(x: isize, y: isize, rows: usize, cols: usize) -> bool {
+    x >= 0 && y >= 0 && x < rows as isize && y < cols as isize
 }
 
-fn is_valley(height_map: &Vec<Vec<u32>>, x: usize, y: usize, rows: usize, cols: usize) -> bool {
+fn is_valley(height_map: &[Vec<u32>], x: usize, y: usize, rows: usize, cols: usize) -> bool {
     for (dx, dy) in DIRECTIONS {
-        let (nx, ny) = (x as i32 + dx, y as i32 + dy);
+        let (nx, ny) = (x as isize + dx, y as isize + dy);
         if !on_map(nx, ny, rows, cols) {
             continue;
         }
@@ -54,7 +54,7 @@ fn calc_risk_of_low_points(input: &str) -> i32 {
 }
 
 fn explore_basin(
-    height_map: &Vec<Vec<u32>>,
+    height_map: &[Vec<u32>],
     i: usize,
     j: usize,
     visited: &mut HashMap<(usize, usize), usize>,
@@ -67,19 +67,22 @@ fn explore_basin(
     queue.push_back((i, j));
     visited.insert((i, j), id);
 
-    while queue.len() > 0 {
+    while !queue.is_empty() {
         let (x, y) = queue.pop_front().unwrap();
         size += 1;
         for (dx, dy) in DIRECTIONS {
-            let (nx, ny) = (x as i32 + dx, y as i32 + dy);
+            let (nx, ny) = (x as isize + dx, y as isize + dy);
             if !on_map(nx, ny, rows, cols) {
                 continue;
             }
             let (nx, ny) = (nx as usize, ny as usize);
             if height_map[nx][ny] != 9 {
-                if !visited.contains_key(&(nx, ny)) {
-                    visited.insert((nx, ny), id);
+                if let Entry::Vacant(e) = visited.entry((nx, ny)) {
+                    e.insert(id);
                     queue.push_back((nx, ny));
+                // if !visited.contains_key(&(nx, ny)) {
+                //     visited.insert((nx, ny), id);
+                //     queue.push_back((nx, ny));
                 } else if *visited.get(&(nx, ny)).unwrap() != id {
                     panic!("a cell belongs to two basins");
                 }
@@ -103,9 +106,8 @@ fn calc_top3_basin(input: &str) -> i32 {
             }
         }
     }
-    basin_size.sort();
-    basin_size.reverse();
-    basin_size[0] * basin_size[1] * basin_size[2]
+    basin_size.sort_unstable();
+    basin_size.iter().rev().take(3).product()
 }
 
 fn main() {

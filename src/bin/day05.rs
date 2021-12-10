@@ -1,8 +1,11 @@
-use std::collections::HashMap;
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader},
+};
 
-use advent_of_code::{read_input, Coordinate, Segment};
+use advent_of_code::{read_file_to_string, Coordinate, Segment};
 
 trait SegmentMarker {
     fn mark(&self, record: &mut HashMap<(i32, i32), i32>, diagonal: bool);
@@ -26,27 +29,31 @@ impl SegmentMarker for Segment {
     }
 }
 
-fn get_segment(line: &str) -> Segment {
+fn get_segment(line: String) -> Segment {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?P<x1>\d+),(?P<y1>\d+) -> (?P<x2>\d+),(?P<y2>\d+)").unwrap();
+        static ref RE: Regex =
+            Regex::new(r"(?P<x1>\d+),(?P<y1>\d+) -> (?P<x2>\d+),(?P<y2>\d+)").unwrap();
     }
-    match RE.captures(line) {
+    match RE.captures(&line) {
         Some(caps) => Segment::new(
             Coordinate::new(
                 caps.name("x1").unwrap().as_str().parse().unwrap(),
-                caps.name("y1").unwrap().as_str().parse().unwrap()
+                caps.name("y1").unwrap().as_str().parse().unwrap(),
             ),
             Coordinate::new(
                 caps.name("x2").unwrap().as_str().parse().unwrap(),
-                caps.name("y2").unwrap().as_str().parse().unwrap()
-            )
+                caps.name("y2").unwrap().as_str().parse().unwrap(),
+            ),
         ),
         None => panic!("Cannot parse line {}", line),
     }
 }
 
-fn get_overlap_count(input: &Vec<&str>, diagonal: bool) -> usize {
-    let segments: Vec<Segment> = input.iter().map(|l| get_segment(l)).collect();
+fn get_overlap_count(input: &str, diagonal: bool) -> usize {
+    let segments: Vec<Segment> = BufReader::new(input.as_bytes())
+        .lines()
+        .map(|line| get_segment(line.unwrap()))
+        .collect();
     let mut mark_count = HashMap::new();
     for seg in &segments {
         seg.mark(&mut mark_count, diagonal);
@@ -55,8 +62,7 @@ fn get_overlap_count(input: &Vec<&str>, diagonal: bool) -> usize {
 }
 
 fn main() {
-    let lines = read_input(env!("CARGO_BIN_NAME"));
-    let input = lines.iter().map(|l| l.as_str()).collect();
+    let input = read_file_to_string(env!("CARGO_BIN_NAME"));
     println!("{}", get_overlap_count(&input, false));
     println!("{}", get_overlap_count(&input, true));
 }
@@ -67,18 +73,16 @@ mod tests {
 
     #[test]
     fn test_get_overlap_count() {
-        let data = vec![
-            "0,9 -> 5,9",
-            "8,0 -> 0,8",
-            "9,4 -> 3,4",
-            "2,2 -> 2,1",
-            "7,0 -> 7,4",
-            "6,4 -> 2,0",
-            "0,9 -> 2,9",
-            "3,4 -> 1,4",
-            "0,0 -> 8,8",
-            "5,5 -> 8,2",
-        ];
+        let data = "0,9 -> 5,9
+                    8,0 -> 0,8
+                    9,4 -> 3,4
+                    2,2 -> 2,1
+                    7,0 -> 7,4
+                    6,4 -> 2,0
+                    0,9 -> 2,9
+                    3,4 -> 1,4
+                    0,0 -> 8,8
+                    5,5 -> 8,2";
         assert_eq!(5, get_overlap_count(&data, false));
         assert_eq!(12, get_overlap_count(&data, true));
     }
